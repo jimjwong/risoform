@@ -29,7 +29,7 @@ export default function FormBuilder({ form, demo, onSave, onBack, onResponses, o
     return ok;
   }
   async function togglePublish() {
-    if (demo) { onNotice("Demo forms stay in this browser. Sign up to publish and collect responses."); return; }
+    if (demo) { onNotice("Demo forms cannot be published or collect responses."); return; }
     await persist({ ...draft, status: draft.status === "published" ? "draft" : "published" });
   }
   function back() { if (dirty && !window.confirm("Discard unsaved changes?")) return; onBack(); }

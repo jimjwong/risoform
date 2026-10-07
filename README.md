@@ -33,6 +33,9 @@ For UI exploration without a database, run `npm run dev -- -p 3101 --hostname 12
 
 ## Production direction
 
+The [tailnet demo preview](docs/TAILNET_PREVIEW.md) is a browser-only preview.
+It does not provide account sign in, publishing, or response collection.
+
 The planned home is **Coolify at `coolify.debricks.cloud`**, with a separate web app service and a self-hosted Supabase stack. No production services or domains have been provisioned by this repository. [Deployment steps](docs/DEPLOYMENT.md) cover the Docker build, environment variables, database migration, HTTPS, auth email, backups, and launch checks.
 
 ## Data boundaries and current limits
