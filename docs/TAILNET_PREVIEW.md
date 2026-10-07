@@ -14,6 +14,10 @@ they cannot be published or collect live responses. Do not put sensitive data
 in the preview. The Supabase CLI development stack on this machine must not
 be used as the externally reachable production database.
 
+**Describe a form** makes a sample draft with local field suggestions in this
+preview. Signed-in users get AI-tailored drafts after the production app has
+Supabase Auth and a server-side `OPENAI_API_KEY` configured.
+
 ## Rebuild and restart
 
 From the repository root:

@@ -9,6 +9,8 @@ A small, responsive form builder with isolated workspaces, conversational public
 - Multiple owner-isolated workspaces per account. Each account owns its own workspaces; inviting collaborators is a later feature.
 - Form builder with 18 answer types: short and long text, name, email, phone, website, number, date, time, dropdown, single and multiple choice, yes/no, rating, opinion scale, file, address, and consent.
 - Five style presets, colors, required questions, reordering, preview, publish/unpublish, share link, responses, and CSV export.
+- Signed-in owners can describe a form and receive an editable AI draft. Set `OPENAI_API_KEY` as a server-side runtime secret; `OPENAI_MODEL` defaults to `gpt-4o-mini`. The browser-only demo offers a clearly labeled sample draft using local suggestions.
+- Owner-only response view includes daily submission and answer-distribution charts, question completion, and rating averages. Responses remain in Supabase and can be exported to CSV.
 - Published forms accept anonymous submissions. Files are stored in a private Supabase Storage bucket, and only the workspace owner can create short-lived download links.
 
 ## Local start
@@ -44,11 +46,14 @@ Database row-level security isolates each owner's workspaces and responses. Publ
 
 This is an initial product build. Before public launch, add shared rate limiting and bot protection at the ingress, verify email delivery, add storage cleanup when forms are deleted, and run a full backup/restore drill. Payment, signature, calculation, conditional branching, team roles, and Google sign in are not implemented. Published forms can be edited; each response stores a snapshot of its question labels so historical exports remain understandable.
 
+Response charts currently load all answers for the selected form in pages. This is suitable for early use; high-volume forms will need server-side aggregation and paged response browsing.
+
 ## Checks
 
 ```powershell
 npm run build
 npm run lint
+node --no-warnings --experimental-strip-types scripts/check-stats.mjs
 npx supabase db reset
 node --env-file=.env.local scripts/smoke.mjs
 ```

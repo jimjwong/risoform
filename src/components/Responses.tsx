@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { BarChart3, Copy, Download } from "lucide-react";
 import { answerToText } from "@/lib/form";
+import ResponseAnalytics from "./ResponseAnalytics";
 import { supabaseBrowser } from "@/lib/supabase";
 import type { FormRecord, ResponseRecord } from "@/lib/types";
 
@@ -18,11 +19,19 @@ export default function Responses({ forms, selectedId, onSelect, demo, onCopy }:
   useEffect(() => {
     if (!formId || demo || !client) return;
     let active = true;
-    client.from("responses").select("id,form_id,answers,field_snapshot,submitted_at").eq("form_id", formId).order("submitted_at", { ascending: false }).then(({ data, error }) => {
-      if (!active) return;
-      setLoadedId(formId);
-      if (error) setError(error.message); else { setResponses((data ?? []) as ResponseRecord[]); setError(""); }
-    });
+    async function loadResponses() {
+      const all: ResponseRecord[] = [];
+      const pageSize = 500;
+      for (let offset = 0; active; offset += pageSize) {
+        const { data, error } = await client!.from("responses").select("id,form_id,answers,field_snapshot,submitted_at").eq("form_id", formId).order("submitted_at", { ascending: false }).order("id", { ascending: false }).range(offset, offset + pageSize - 1);
+        if (!active) return;
+        if (error) { setError(error.message); setLoadedId(formId); return; }
+        all.push(...((data ?? []) as ResponseRecord[]));
+        if (!data || data.length < pageSize) break;
+      }
+      if (active) { setResponses(all); setError(""); setLoadedId(formId); }
+    }
+    void loadResponses();
     return () => { active = false; };
   }, [formId, demo, client]);
   const columns = new Map<string, { title: string; type: string }>();
@@ -40,7 +49,7 @@ export default function Responses({ forms, selectedId, onSelect, demo, onCopy }:
     const url = URL.createObjectURL(new Blob(["\ufeff", csv], { type: "text/csv;charset=utf-8" }));
     const link = document.createElement("a"); link.href = url; link.download = `${selected.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-responses.csv`; link.click(); URL.revokeObjectURL(url);
   }
-  return <div className="page-wrap"><div className="page-heading"><div><div className="eyebrow">YOUR ANSWERS</div><h1>Responses</h1><p>See what people shared with you.</p></div>{selected && <button className="secondary-button" onClick={exportCsv} disabled={!visibleResponses.length}><Download size={17} /> Export CSV</button>}</div><div className="response-selector"><label>Form <select value={selectedId} onChange={(event) => onSelect(event.target.value)}><option value="">Choose a form</option>{forms.map((form) => <option key={form.id} value={form.id}>{form.title}</option>)}</select></label>{selected && <span>{visibleResponses.length} responses</span>}</div>{error && <div className="inline-notice">{error}</div>}{!selected ? <div className="empty-list"><BarChart3 size={32} /><h3>Choose a form to see its responses</h3></div> : loading ? <div className="empty-list">Loading responses...</div> : visibleResponses.length ? <div className="responses-table-wrap"><table className="responses-table"><thead><tr><th>Submitted</th>{columnList.map(([id, field]) => <th key={id}>{field.title}</th>)}</tr></thead><tbody>{visibleResponses.map((response) => <tr key={response.id}><td>{new Date(response.submitted_at).toLocaleString()}</td>{columnList.map(([id, field]) => <td key={id}>{field.type !== "file" ? answerToText(response.answers[id]) || "—" : <FileLinks answer={response.answers[id]} />}</td>)}</tr>)}</tbody></table></div> : <div className="empty-list"><div className="empty-illustration"><BarChart3 size={31} /></div><h3>No responses yet</h3><p>{demo ? "Demo forms do not collect live responses." : "Share your form to start collecting answers."}</p>{selected.status === "published" && <button className="secondary-button" onClick={() => onCopy(selected)}><Copy size={16} /> Copy form link</button>}</div>}</div>;
+  return <div className="page-wrap"><div className="page-heading"><div><div className="eyebrow">YOUR ANSWERS</div><h1>Responses</h1><p>See what people shared with you.</p></div>{selected && <button className="secondary-button" onClick={exportCsv} disabled={!visibleResponses.length}><Download size={17} /> Export CSV</button>}</div><div className="response-selector"><label>Form <select value={selectedId} onChange={(event) => onSelect(event.target.value)}><option value="">Choose a form</option>{forms.map((form) => <option key={form.id} value={form.id}>{form.title}</option>)}</select></label>{selected && <span>{visibleResponses.length} responses</span>}</div>{error && <div className="inline-notice">{error}</div>}{!selected ? <div className="empty-list"><BarChart3 size={32} /><h3>Choose a form to see its responses</h3></div> : loading ? <div className="empty-list">Loading responses...</div> : visibleResponses.length ? <><ResponseAnalytics fields={selected.fields} responses={visibleResponses} /><div className="responses-table-wrap"><table className="responses-table"><thead><tr><th>Submitted</th>{columnList.map(([id, field]) => <th key={id}>{field.title}</th>)}</tr></thead><tbody>{visibleResponses.map((response) => <tr key={response.id}><td>{new Date(response.submitted_at).toLocaleString()}</td>{columnList.map(([id, field]) => <td key={id}>{field.type !== "file" ? answerToText(response.answers[id]) || "—" : <FileLinks answer={response.answers[id]} />}</td>)}</tr>)}</tbody></table></div></> : <div className="empty-list"><div className="empty-illustration"><BarChart3 size={31} /></div><h3>No responses yet</h3><p>{demo ? "Demo forms do not collect live responses." : "Share your form to start collecting answers."}</p>{selected.status === "published" && <button className="secondary-button" onClick={() => onCopy(selected)}><Copy size={16} /> Copy form link</button>}</div>}</div>;
 }
 
 function FileLinks({ answer }: { answer: unknown }) {

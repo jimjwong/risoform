@@ -21,6 +21,8 @@ Create a Dockerfile-based application from this repository in Coolify, using `Do
 
 Set `SUPABASE_SECRET_KEY` as a **runtime secret** only. Never make it a `NEXT_PUBLIC_` value or a Docker build argument. Redeploy the web app when a browser-visible URL or publishable key changes.
 
+To enable AI form drafting, set `OPENAI_API_KEY` as another **runtime secret**. Optionally set `OPENAI_MODEL` (the default is `gpt-4o-mini`). The key must never be a build argument or `NEXT_PUBLIC_` value. The app verifies the signed-in Supabase user before calling OpenAI, caps prompt length, and returns an editable draft. AI descriptions are sent to OpenAI with response storage disabled. Add shared rate limiting and spending controls before public launch.
+
 ## 3. Launch checks
 
 1. Create two email accounts and separate workspaces. Confirm one cannot list, edit, or read the other's forms, responses, or files.

@@ -19,9 +19,18 @@ const uploaded = [];
 function noError(result) { assert.ifError(result.error); return result.data; }
 
 try {
-  const aUser = noError(await a.auth.signUp({ email: `risoform-a-${randomUUID()}@example.test`, password })).user;
+  const aAuth = noError(await a.auth.signUp({ email: `risoform-a-${randomUUID()}@example.test`, password }));
+  const aUser = aAuth.user;
   const bUser = noError(await b.auth.signUp({ email: `risoform-b-${randomUUID()}@example.test`, password })).user;
   assert(aUser && bUser);
+  const ideaRequest = JSON.stringify({ prompt: "Create a customer feedback form with rating and comments." });
+  const anonymousAi = await fetch(`${app}/api/ai/generate`, { method: "POST", headers: { "content-type": "application/json" }, body: ideaRequest });
+  assert.equal(anonymousAi.status, 401);
+  if (!process.env.OPENAI_API_KEY) {
+    assert(aAuth.session?.access_token);
+    const withoutProvider = await fetch(`${app}/api/ai/generate`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${aAuth.session.access_token}` }, body: ideaRequest });
+    assert.equal(withoutProvider.status, 503);
+  }
   users.push(aUser.id, bUser.id);
   const workspace = noError(await a.from("workspaces").insert({ name: "Smoke workspace", created_by: aUser.id }).select().single());
   const formId = randomUUID();
